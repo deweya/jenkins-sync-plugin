@@ -95,10 +95,32 @@ public class RouteWatcher extends BaseWatcher {
 			for (Route route : items) {
 				try {
 					logger.log(Level.INFO, "Found a valid route!!");
+					JenkinsUtils.setRootUrl(route.getSpec().getHost());
 				} catch (Exception e) {
 					logger.log(SEVERE, "Failed to update job", e);
 				}
 			}
+		}
+	}
+	
+	public void eventReceived(Action action, Route route) {
+		try {
+			switch (action) {
+			case ADDED:
+			case MODIFIED:
+				JenkinsUtils.setRootUrl(route.getSpec().getHost());
+				break;
+			case DELETED:
+				JenkinsUtils.setRootUrl(null);
+				break;
+			case ERROR:
+				logger.warning("watch for route " + route.getMetadata().getName() + " received error event ");
+				break;
+			default:
+				logger.warning("watch for route " + route.getMetadata().getName() + " received unknown event " + action);
+			}
+		} catch (Exception e) {
+			logger.log(Level.WARNING, "Caught: " + e, e);
 		}
 	}
 	

@@ -52,6 +52,7 @@ import io.fabric8.openshift.api.model.GitSourceRevision;
 import io.fabric8.openshift.api.model.JenkinsPipelineBuildStrategy;
 import io.fabric8.openshift.api.model.SourceRevision;
 import jenkins.model.Jenkins;
+import jenkins.model.JenkinsLocationConfiguration;
 import jenkins.security.NotReallyRoleSensitiveCallable;
 import jenkins.util.Timer;
 
@@ -140,6 +141,11 @@ public class JenkinsUtils {
 			root = "http://localhost:8080/";
 		}
 		return root;
+	}
+	
+	public static void setRootUrl(String url) {
+		JenkinsLocationConfiguration.get().setUrl("https://" + url);
+		JenkinsLocationConfiguration.get().save();
 	}
 
 	public static void verifyEnvVars(Map<String, ParameterDefinition> paramMap, WorkflowJob workflowJob, BuildConfig buildConfig) throws AbortException {

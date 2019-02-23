@@ -33,6 +33,10 @@ public class RouteWatcher extends BaseWatcher {
 		return new SafeTimerTask() {
 			@Override
 			public void doRun() throws Exception {
+                if (!CredentialsUtils.hasCredentials()) {
+                    logger.fine("No Openshift Token credential defined.");
+                    return;
+                }
 				for (String namespace : namespaces) {
 					RouteList routes = null;
 					try {
@@ -45,6 +49,32 @@ public class RouteWatcher extends BaseWatcher {
                         logger.fine("handled Routes resources");
 					} catch (Exception e) {
                         logger.log(SEVERE, "Failed to load Routes: " + e, e);
+					}
+					try {
+						String resourceVersion = "0";
+						if (routes == null) {
+							logger.warning("Unable to get route list; impacts version used for watch");
+						} else {
+							resourceVersion = routes.getMetadata().getResourceVersion();
+						}
+						if (watches.get(namespace) == null) {
+							logger.info("creating Route watch for namespace "
+									+ namespace + " and resource version"
+									+ resourceVersion);
+							addWatch(namespace,
+									getAuthenticatedOpenShiftClient()
+									.routes()
+									.inNamespace(namespace)
+									// TODO: Again, add this to Constants once we decide on a good label
+									.withLabel("route.sync.jenkins.openshift.io",
+											Constants.VALUE_SECRET_SYNC)
+											.withResourceVersion(
+													resourceVersion)
+													.watch(new WatcherCallback<Route>(RouteWatcher.this,
+															namespace)));
+						}
+					} catch (Exception e) {
+						logger.log(SEVERE, "Failed to load Routes: " + e, e);
 					}
 				}
 			}

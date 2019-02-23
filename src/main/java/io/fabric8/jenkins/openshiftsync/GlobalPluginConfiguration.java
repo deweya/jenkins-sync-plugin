@@ -64,6 +64,7 @@ public class GlobalPluginConfiguration extends GlobalConfiguration {
   private int secretListInterval = 300;
   private int configMapListInterval = 300;
   private int imageStreamListInterval = 300;
+  private int routeListInterval = 300;
     
 	private transient BuildWatcher buildWatcher;
 
@@ -74,13 +75,15 @@ public class GlobalPluginConfiguration extends GlobalConfiguration {
 	private transient ConfigMapWatcher configMapWatcher;
 
 	private transient ImageStreamWatcher imageStreamWatcher;
+	
+	private transient RouteWatcher routeWatcher;
 
 	@DataBoundConstructor
 	public GlobalPluginConfiguration(boolean enable, String server, String namespace,
       boolean foldersEnabled, String credentialsId,
 			String jobNamePattern, String skipOrganizationPrefix, String skipBranchSuffix,
 			int buildListInterval, int buildConfigListInterval, int configMapListInterval,
-			int secretListInterval, int imageStreamListInterval) {
+			int secretListInterval, int imageStreamListInterval, int routeListInterval) {
 		this.enabled = enable;
 		this.server = server;
 		this.namespaces = StringUtils.isBlank(namespace) ? null : namespace.split(" ");
@@ -94,6 +97,7 @@ public class GlobalPluginConfiguration extends GlobalConfiguration {
 		this.configMapListInterval = configMapListInterval;
 		this.secretListInterval = secretListInterval;
 		this.imageStreamListInterval = imageStreamListInterval;
+		this.routeListInterval = routeListInterval;
 		configChange();
 	}
 
@@ -225,6 +229,14 @@ public class GlobalPluginConfiguration extends GlobalConfiguration {
     public void setImageStreamListInterval(int imageStreamListInterval) {
         this.imageStreamListInterval = imageStreamListInterval;
     }
+    
+    public int getRouteListInterval() {
+    	return routeListInterval;
+    }
+    
+    public void setRouteListInterval(int routeListInterval) {
+    	this.routeListInterval = routeListInterval;
+    }
 
     // https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin
 	// http://javadoc.jenkins-ci.org/credentials/com/cloudbees/plugins/credentials/common/AbstractIdCredentialsListBoxModel.html
@@ -262,11 +274,15 @@ public class GlobalPluginConfiguration extends GlobalConfiguration {
         if (secretWatcher != null) {
             secretWatcher.stop();
         }
+        if (routeWatcher != null) {
+        	routeWatcher.stop();
+        }
         buildWatcher = null;
         buildConfigWatcher = null;
         configMapWatcher = null;
         imageStreamWatcher = null;
         secretWatcher = null;
+        routeWatcher = null;
         OpenShiftUtils.shutdownOpenShiftClient();
         
 		if (!enabled) {
@@ -311,6 +327,8 @@ public class GlobalPluginConfiguration extends GlobalConfiguration {
 					imageStreamWatcher.start();
 					secretWatcher = new SecretWatcher(namespaces);
 					secretWatcher.start();
+					routeWatcher = new RouteWatcher(namespaces);
+					routeWatcher.start();
 				}
 			};
 			// lets give jenkins a while to get started ;)

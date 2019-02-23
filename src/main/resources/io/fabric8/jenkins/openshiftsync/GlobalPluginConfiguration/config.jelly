@@ -69,5 +69,9 @@
              description="Time in seconds the sync plugin runs a list operation for secrets">
       <f:textbox/>
     </f:entry>
+    <f:entry title="Route list interval" field="routeListInterval"
+    		 description="Time in seconds the sync plugin runs a list operation for routes">
+      <f:textbox/>
+    </f:entry>
   </f:section>
 </j:jelly>

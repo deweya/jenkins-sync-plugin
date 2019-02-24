@@ -124,7 +124,7 @@ public class RouteWatcher extends BaseWatcher {
 			switch (action) {
 			case ADDED:
 			case MODIFIED:
-				JenkinsUtils.setRootUrl(route.getSpec().getHost());
+				JenkinsUtils.setRootUrl(getRouteUrl(route));
 				break;
 			case DELETED:
 				JenkinsUtils.setRootUrl(null);

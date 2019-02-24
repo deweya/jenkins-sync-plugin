@@ -98,12 +98,22 @@ public class RouteWatcher extends BaseWatcher {
 		return url;
 	}
 	
-	private boolean isWatched(Route route) {
+	// Needed in case multiple Jenkins instances are colocated in the same namespace
+	// We don't want to watch a route that is already being watched by another Jenkins instance
+	private boolean hasWatchedAnnotation(Route route) {
 		String value = route.getMetadata().getAnnotations().get("sync.jenkins.openshift.io/watched");
 		if (value != null && value.equals(Constants.VALUE_SECRET_SYNC)) {
 			return true;
 		}
 		return false;
+	}
+	
+	private void addWatchedAnnotation(Route route) {
+		getAuthenticatedOpenShiftClient().routes().withName(route.getMetadata().getName()).edit()
+											.editMetadata()
+											.addToAnnotations("sync.jenkins.openshift.io/watched", Constants.VALUE_SECRET_SYNC)
+											.endMetadata()
+											.done();
 	}
 	
 	private void onInitialRoutes(RouteList routes) {
@@ -113,16 +123,14 @@ public class RouteWatcher extends BaseWatcher {
 		if (items != null) {
 			for (Route route : items) {
 				try {
-					if (isWatched(route) || trackedRoute != null)
+					if (trackedRoute != null)
 						return;
+					if (hasWatchedAnnotation(route))
+						continue;
 					trackedRoute = route;
 					logger.log(Level.INFO, "Found a valid route!!");
+					addWatchedAnnotation(route);
 					JenkinsUtils.setRootUrl(getRouteUrl(route));
-					getAuthenticatedOpenShiftClient().routes().withName(route.getMetadata().getName()).edit()
-														.editMetadata()
-														.addToAnnotations("sync.jenkins.openshift.io/watched", Constants.VALUE_SECRET_SYNC)
-														.endMetadata()
-														.done();
 				} catch (Exception e) {
 					logger.log(SEVERE, "Failed to update Route", e);
 				}
@@ -137,9 +145,16 @@ public class RouteWatcher extends BaseWatcher {
 				if (trackedRoute != null)
 					break;
 				trackedRoute = route;
+				addWatchedAnnotation(route);
+				JenkinsUtils.setRootUrl(getRouteUrl(route));
+				break;
 			case MODIFIED:
 				if (trackedRoute != route)
 					break;
+				// We don't want users to remove the watched annotation from the route
+				if (!hasWatchedAnnotation(route)) {
+					addWatchedAnnotation(route);
+				}
 				JenkinsUtils.setRootUrl(getRouteUrl(route));
 				break;
 			case DELETED:

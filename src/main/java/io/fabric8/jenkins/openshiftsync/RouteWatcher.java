@@ -107,6 +107,11 @@ public class RouteWatcher extends BaseWatcher {
 				try {
 					logger.log(Level.INFO, "Found a valid route!!");
 					JenkinsUtils.setRootUrl(getRouteUrl(route));
+					getAuthenticatedOpenShiftClient().routes().withName(route.getMetadata().getName()).edit()
+														.editMetadata()
+														.addToAnnotations("sync.jenkins.openshift.io/watched", Constants.VALUE_SECRET_SYNC)
+														.endMetadata()
+														.done();
 				} catch (Exception e) {
 					logger.log(SEVERE, "Failed to update Route", e);
 				}

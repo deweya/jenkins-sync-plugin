@@ -113,8 +113,9 @@ public class RouteWatcher extends BaseWatcher {
 		if (items != null) {
 			for (Route route : items) {
 				try {
-					if (isWatched(route))
+					if (isWatched(route) || trackedRoute != null)
 						return;
+					trackedRoute = route;
 					logger.log(Level.INFO, "Found a valid route!!");
 					JenkinsUtils.setRootUrl(getRouteUrl(route));
 					getAuthenticatedOpenShiftClient().routes().withName(route.getMetadata().getName()).edit()
@@ -133,10 +134,18 @@ public class RouteWatcher extends BaseWatcher {
 		try {
 			switch (action) {
 			case ADDED:
+				if (trackedRoute != null)
+					break;
+				trackedRoute = route;
 			case MODIFIED:
+				if (trackedRoute != route)
+					break;
 				JenkinsUtils.setRootUrl(getRouteUrl(route));
 				break;
 			case DELETED:
+				if (trackedRoute != route)
+					break;
+				trackedRoute = null;
 				JenkinsUtils.setRootUrl(null);
 				break;
 			case ERROR:

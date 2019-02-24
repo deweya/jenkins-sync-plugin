@@ -14,7 +14,7 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteList;
 
 public class RouteWatcher extends BaseWatcher {
-    private String trackedRoute;
+    private Route trackedRoute;
     
     private final Logger logger = Logger.getLogger(getClass().getName());
 
@@ -87,6 +87,17 @@ public class RouteWatcher extends BaseWatcher {
 		logger.info("Now handling startup routes!!");
 	}
 	
+	private String getRouteUrl(Route route) {
+		String url = "";
+		if (route.getSpec().getTls() == null) {
+			url += "http://";
+		} else {
+			url += "https://";
+		}
+		url += route.getSpec().getHost();
+		return url;
+	}
+	
 	private void onInitialRoutes(RouteList routes) {
 		if (routes == null)
 			return;
@@ -95,9 +106,9 @@ public class RouteWatcher extends BaseWatcher {
 			for (Route route : items) {
 				try {
 					logger.log(Level.INFO, "Found a valid route!!");
-					JenkinsUtils.setRootUrl(route.getSpec().getHost());
+					JenkinsUtils.setRootUrl(getRouteUrl(route));
 				} catch (Exception e) {
-					logger.log(SEVERE, "Failed to update job", e);
+					logger.log(SEVERE, "Failed to update Route", e);
 				}
 			}
 		}
@@ -118,6 +129,7 @@ public class RouteWatcher extends BaseWatcher {
 				break;
 			default:
 				logger.warning("watch for route " + route.getMetadata().getName() + " received unknown event " + action);
+				break;
 			}
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "Caught: " + e, e);

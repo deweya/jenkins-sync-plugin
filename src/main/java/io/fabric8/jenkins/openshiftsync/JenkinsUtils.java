@@ -144,7 +144,7 @@ public class JenkinsUtils {
 	}
 	
 	public static void setRootUrl(String url) {
-		JenkinsLocationConfiguration.get().setUrl("https://" + url);
+		JenkinsLocationConfiguration.get().setUrl(url);
 		JenkinsLocationConfiguration.get().save();
 	}
 

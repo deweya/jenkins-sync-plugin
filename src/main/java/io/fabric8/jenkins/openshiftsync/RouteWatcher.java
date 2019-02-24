@@ -59,7 +59,7 @@ public class RouteWatcher extends BaseWatcher {
 						}
 						if (watches.get(namespace) == null) {
 							logger.info("creating Route watch for namespace "
-									+ namespace + " and resource version"
+									+ namespace + " and resource version "
 									+ resourceVersion);
 							addWatch(namespace,
 									getAuthenticatedOpenShiftClient()
@@ -98,6 +98,14 @@ public class RouteWatcher extends BaseWatcher {
 		return url;
 	}
 	
+	private boolean isWatched(Route route) {
+		String value = route.getMetadata().getAnnotations().get("sync.jenkins.openshift.io/watched");
+		if (value != null && value.equals(Constants.VALUE_SECRET_SYNC)) {
+			return true;
+		}
+		return false;
+	}
+	
 	private void onInitialRoutes(RouteList routes) {
 		if (routes == null)
 			return;
@@ -105,6 +113,8 @@ public class RouteWatcher extends BaseWatcher {
 		if (items != null) {
 			for (Route route : items) {
 				try {
+					if (isWatched(route))
+						return;
 					logger.log(Level.INFO, "Found a valid route!!");
 					JenkinsUtils.setRootUrl(getRouteUrl(route));
 					getAuthenticatedOpenShiftClient().routes().withName(route.getMetadata().getName()).edit()
